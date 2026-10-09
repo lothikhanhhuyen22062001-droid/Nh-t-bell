@@ -1,0 +1,593 @@
+local Players, RunService = game:GetService("Players"), game:GetService("RunService")
+local StarterGui, UIS = game:GetService("StarterGui"), game:GetService("UserInputService")
+local TweenService, Lighting = game:GetService("TweenService"), game:GetService("Lighting")
+local LP, PG = Players.LocalPlayer, Players.LocalPlayer:WaitForChild("PlayerGui")
+
+if PG:FindFirstChild("main") then PG.main:Destroy() end
+
+--============ RAINBOW HELPER ============
+local hue = 0
+local function rainbowHSV()
+    return Color3.fromHSV(hue % 1, 0.7, 1)
+end
+local function rainbowHSV2()
+    return Color3.fromHSV((hue + 0.5) % 1, 0.8, 0.9)
+end
+
+--============ GUI CHÍNH ============
+local main = Instance.new("ScreenGui")
+main.Name, main.Parent = "main", PG
+main.ZIndexBehavior, main.ResetOnSpawn, main.IgnoreGuiInset = Enum.ZIndexBehavior.Sibling, false, true
+
+local Frame = Instance.new("Frame")
+Frame.Name, Frame.Parent = "Frame", main
+Frame.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+Frame.Position, Frame.Size = UDim2.new(0.1, 0, 0.28, 0), UDim2.new(0, 260, 0, 340)
+Frame.Active, Frame.Draggable, Frame.ClipsDescendants = true, true, true
+local fc = Instance.new("UICorner"); fc.CornerRadius = UDim.new(0, 10); fc.Parent = Frame
+local fs = Instance.new("UIStroke"); fs.Thickness = 2; fs.Parent = Frame
+
+-- Title
+local TextLabel = Instance.new("TextLabel")
+TextLabel.Name, TextLabel.Parent = "title", Frame
+TextLabel.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+TextLabel.Position, TextLabel.Size = UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 32)
+TextLabel.Font, TextLabel.Text = Enum.Font.SourceSansBold, "🌈 MENU 🌈"
+TextLabel.TextColor3, TextLabel.TextSize = Color3.fromRGB(255, 255, 255), 16
+local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 10); tc.Parent = TextLabel
+
+-- Scrolling Frame
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Name, Scroll.Parent = "Scroll", Frame
+Scroll.BackgroundTransparency, Scroll.BorderSizePixel = 1, 0
+Scroll.Position, Scroll.Size = UDim2.new(0, 0, 0, 34), UDim2.new(1, 0, 1, -34)
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 640)
+Scroll.ScrollBarThickness, Scroll.ScrollBarImageColor3 = 4, Color3.fromRGB(255, 255, 255)
+
+--============ FACTORY ============
+local function mkBtn(name, text, pos, size, ts, parent)
+    local b = Instance.new("TextButton")
+    b.Name, b.Parent = name, parent or Scroll
+    b.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    b.Position, b.Size = pos, size
+    b.Font, b.Text = Enum.Font.SourceSansBold, text
+    b.TextColor3, b.TextSize = Color3.fromRGB(255, 255, 255), ts or 14
+    b.AutoButtonColor = true
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = b
+    return b
+end
+
+local function mkLabel(name, text, pos, size, parent)
+    local l = Instance.new("TextLabel")
+    l.Name, l.Parent = name, parent or Scroll
+    l.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+    l.Position, l.Size = pos, size
+    l.Font, l.Text = Enum.Font.SourceSansBold, text
+    l.TextColor3, l.TextSize = Color3.fromRGB(255, 255, 255), 14
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = l
+    return l
+end
+
+local function mkToggle(name, text, pos, size)
+    return mkBtn(name, "⬜ " .. text, pos, size, 13)
+end
+
+--============ HÀNG 1 ============
+local onof = mkBtn("onof", "✈️ FLY", UDim2.new(0, 6, 0, 4), UDim2.new(0, 80, 0, 30))
+local up   = mkBtn("up",   "⬆️ UP",  UDim2.new(0, 90, 0, 4), UDim2.new(0, 76, 0, 30))
+local down = mkBtn("down", "⬇️ DOWN",UDim2.new(0, 170, 0, 4), UDim2.new(0, 76, 0, 30))
+
+--============ HÀNG 2 ============
+mkLabel("lblSpeed", "SPEED:", UDim2.new(0, 6, 0, 40), UDim2.new(0, 60, 0, 28))
+local mine   = mkBtn("mine", "➖", UDim2.new(0, 70, 0, 40), UDim2.new(0, 40, 0, 28), 16)
+local speed  = mkLabel("speed", "1", UDim2.new(0, 114, 0, 40), UDim2.new(0, 40, 0, 28))
+local plus   = mkBtn("plus", "➕", UDim2.new(0, 158, 0, 40), UDim2.new(0, 40, 0, 28), 16)
+local reset  = mkBtn("reset", "🔄", UDim2.new(0, 202, 0, 40), UDim2.new(0, 40, 0, 28), 14)
+
+--============ HÀNG 3 ============
+mkLabel("lblFlySpd", "FLY SPD:", UDim2.new(0, 6, 0, 74), UDim2.new(0, 70, 0, 28))
+local flySpdMinus = mkBtn("flySpdM", "➖", UDim2.new(0, 80, 0, 74), UDim2.new(0, 40, 0, 28), 16)
+local flySpdLbl   = mkLabel("flySpdL", "50", UDim2.new(0, 124, 0, 74), UDim2.new(0, 40, 0, 28))
+local flySpdPlus  = mkBtn("flySpdP", "➕", UDim2.new(0, 168, 0, 74), UDim2.new(0, 40, 0, 28), 16)
+
+--============ HÀNG 4 ============
+local noclipBtn  = mkToggle("noclip",  "Noclip",    UDim2.new(0, 6,   0, 108), UDim2.new(0, 116, 0, 28))
+local infJumpBtn = mkToggle("infJump", "Inf Jump",  UDim2.new(0, 128, 0, 108), UDim2.new(0, 116, 0, 28))
+
+--============ HÀNG 5 ============
+local espBtn    = mkToggle("esp",   "ESP Player", UDim2.new(0, 6,   0, 142), UDim2.new(0, 116, 0, 28))
+local xrayBtn   = mkToggle("xray",  "X-Ray",      UDim2.new(0, 128, 0, 142), UDim2.new(0, 116, 0, 28))
+
+--============ HÀNG 6 ============
+local antiAfkBtn = mkToggle("antiAfk", "Anti AFK", UDim2.new(0, 6,   0, 176), UDim2.new(0, 116, 0, 28))
+local autoRunBtn = mkToggle("autoRun", "Auto Run", UDim2.new(0, 128, 0, 176), UDim2.new(0, 116, 0, 28))
+
+--============ HÀNG 7 ============
+local fullBrightBtn = mkToggle("fullBright", "Full Bright", UDim2.new(0, 6,   0, 210), UDim2.new(0, 116, 0, 28))
+local hideGuiBtn    = mkToggle("hideGui",    "Hide GUI (H)", UDim2.new(0, 128, 0, 210), UDim2.new(0, 116, 0, 28))
+
+--============ HÀNG 8 ============
+mkLabel("lblTp", "TELEPORT:", UDim2.new(0, 6, 0, 244), UDim2.new(0, 88, 0, 28))
+local tpMouseBtn = mkBtn("tpMouse", "TP Chuột", UDim2.new(0, 98,  0, 244), UDim2.new(0, 68, 0, 28), 13)
+local tpSpawnBtn = mkBtn("tpSpawn", "TP Spawn", UDim2.new(0, 176, 0, 244), UDim2.new(0, 68, 0, 28), 13)
+
+--============ HÀNG 9 ============
+mkLabel("lblChar", "CHAR:", UDim2.new(0, 6, 0, 278), UDim2.new(0, 56, 0, 28))
+local healBtn = mkBtn("heal", "💊 Hồi Máu", UDim2.new(0, 66,  0, 278), UDim2.new(0, 80, 0, 28), 13)
+local godBtn  = mkToggle("god", "God Mode", UDim2.new(0, 156, 0, 278), UDim2.new(0, 88, 0, 28))
+
+--============ HÀNG 10 ============
+mkLabel("lblMisc", "MISC:", UDim2.new(0, 6, 0, 312), UDim2.new(0, 56, 0, 28))
+local copyPosBtn = mkBtn("copyPos", "📋 Copy Pos", UDim2.new(0, 66,  0, 312), UDim2.new(0, 80, 0, 28), 13)
+local rejoinBtn  = mkBtn("rejoin",  "🔁 Rejoin",   UDim2.new(0, 156, 0, 312), UDim2.new(0, 88, 0, 28), 13)
+
+--============ HÀNG 11 ============
+local serverHopBtn = mkBtn("serverHop", "🌐 Server Hop", UDim2.new(0, 6, 0, 346), UDim2.new(0, 238, 0, 28))
+
+--============ HÀNG 12 ============
+mkLabel("lblExtra", "EXTRA:", UDim2.new(0, 6, 0, 380), UDim2.new(0, 60, 0, 28))
+local hipHeightBtn = mkBtn("hipHeight", "HipHeight 0", UDim2.new(0, 70,  0, 380), UDim2.new(0, 84, 0, 28), 13)
+local gravityBtn   = mkBtn("gravity",   "Gravity Low", UDim2.new(0, 160, 0, 380), UDim2.new(0, 84, 0, 28), 13)
+
+--============ HÀNG 13 ============
+mkLabel("lblWS", "WSPD:", UDim2.new(0, 6, 0, 414), UDim2.new(0, 52, 0, 28))
+local wsBox = Instance.new("TextBox")
+wsBox.Name, wsBox.Parent = "wsBox", Scroll
+wsBox.BackgroundColor3, wsBox.Position, wsBox.Size = Color3.fromRGB(255, 255, 255), UDim2.new(0, 62, 0, 414), UDim2.new(0, 55, 0, 28)
+wsBox.Font, wsBox.Text, wsBox.TextColor3, wsBox.TextSize = Enum.Font.SourceSansBold, "16", Color3.fromRGB(0, 0, 0), 14
+local wc = Instance.new("UICorner"); wc.CornerRadius = UDim.new(0, 6); wc.Parent = wsBox
+
+mkLabel("lblJP", "JPWR:", UDim2.new(0, 122, 0, 414), UDim2.new(0, 52, 0, 28))
+local jpBox = wsBox:Clone()
+jpBox.Name, jpBox.Parent, jpBox.Position, jpBox.Text = "jpBox", Scroll, UDim2.new(0, 178, 0, 414), "50"
+
+--============ HÀNG 14 ============
+local applyBtn = mkBtn("apply", "✅ Áp Dụng WSPD + JPWR", UDim2.new(0, 6, 0, 448), UDim2.new(0, 238, 0, 28), 13)
+
+--============ HÀNG 15 ============
+local infoLbl = mkLabel("info", "🌈", UDim2.new(0, 6, 0, 482), UDim2.new(0, 238, 0, 24))
+
+--============ CLOSE / MINI ============
+local closebutton = mkBtn("Close", "✖", UDim2.new(1, -34, 0, 3), UDim2.new(0, 30, 0, 26), 18, Frame)
+local mini        = mkBtn("minimize", "➖", UDim2.new(1, -68, 0, 3), UDim2.new(0, 30, 0, 26), 18, Frame)
+local mini2       = mkBtn("minimize2", "➕", UDim2.new(1, -34, 0, 3), UDim2.new(0, 30, 0, 26), 18, Frame)
+mini2.Visible = false
+
+--============ STATE ============
+local speeds, nowe, tpwalking = 1, false, false
+local maxFlySpeed = 50
+local activeLoops, flyConn = {}, nil
+local curGyro, curVel = nil, nil
+local toggles = {
+    noclip=false, infJump=false, esp=false, xray=false,
+    antiAfk=false, autoRun=false, fullBright=false, god=false,
+}
+local espObjects = {}
+local savedLighting = {}
+local originalGravity = workspace.Gravity
+
+--============ NOTIFICATION ============
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "🌈 MENU 🌈", Text = "Nâng cấp toàn diện",
+        Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150", Duration = 5,
+    })
+end)
+
+--============ STATE LIST ============
+local ALL_STATES = {
+    Enum.HumanoidStateType.Climbing, Enum.HumanoidStateType.FallingDown,
+    Enum.HumanoidStateType.Flying, Enum.HumanoidStateType.Freefall,
+    Enum.HumanoidStateType.GettingUp, Enum.HumanoidStateType.Jumping,
+    Enum.HumanoidStateType.Landed, Enum.HumanoidStateType.Physics,
+    Enum.HumanoidStateType.PlatformStanding, Enum.HumanoidStateType.Ragdoll,
+    Enum.HumanoidStateType.Running, Enum.HumanoidStateType.RunningNoPhysics,
+    Enum.HumanoidStateType.Seated, Enum.HumanoidStateType.StrafingNoPhysics,
+    Enum.HumanoidStateType.Swimming,
+}
+local function setStates(h, e)
+    if not h or not h.Parent then return end
+    for _, s in ipairs(ALL_STATES) do pcall(function() h:SetStateEnabled(s, e) end) end
+end
+
+--============ LOOP MANAGER ============
+local function stopLoops()
+    for _, t in ipairs(activeLoops) do
+        if typeof(t) == "thread" then pcall(task.cancel, t) end
+    end
+    activeLoops = {}
+end
+local function addLoop(fn) table.insert(activeLoops, task.spawn(fn)) end
+
+--============ TP WALK ============
+local function startTpWalk()
+    tpwalking = true
+    for _ = 1, speeds do
+        addLoop(function()
+            while tpwalking do
+                RunService.Heartbeat:Wait()
+                local c = LP.Character
+                local h = c and c:FindFirstChildWhichIsA("Humanoid")
+                if c and h and h.Parent and h.Health > 0 then
+                    if h.MoveDirection.Magnitude > 0 then c:TranslateBy(h.MoveDirection) end
+                else break end
+            end
+        end)
+    end
+end
+local function stopTpWalk() tpwalking = false; stopLoops() end
+
+local function resetAnim(c)
+    if not c then return end
+    local a = c:FindFirstChild("Animate")
+    if a then a.Disabled = false end
+    local h = c:FindFirstChildWhichIsA("Humanoid")
+    if h then
+        pcall(function() h.PlatformStand = false end)
+        pcall(function()
+            for _, v in ipairs(h:GetPlayingAnimationTracks()) do v:AdjustSpeed(1) end
+        end)
+    end
+end
+
+local function getFlyPart(c, h)
+    if h.RigType == Enum.HumanoidRigType.R6 then return c:FindFirstChild("Torso") end
+    return c:FindFirstChild("UpperTorso")
+end
+
+--============ FLY ============
+local function startFly()
+    local c = LP.Character
+    local h = c and c:FindFirstChildWhichIsA("Humanoid")
+    if not c or not h then return end
+    local fp = getFlyPart(c, h)
+    if not fp then return end
+
+    setStates(h, false)
+    pcall(function() h:ChangeState(Enum.HumanoidStateType.Swimming) end)
+    local a = c:FindFirstChild("Animate")
+    if a then a.Disabled = true end
+    pcall(function()
+        for _, v in ipairs(h:GetPlayingAnimationTracks()) do v:AdjustSpeed(0) end
+    end)
+
+    startTpWalk()
+
+    local bg = Instance.new("BodyGyro")
+    bg.P, bg.MaxTorque = 9e4, Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame, bg.Parent = fp.CFrame, fp
+    local bv = Instance.new("BodyVelocity")
+    bv.Velocity, bv.MaxForce = Vector3.new(0, 0.1, 0), Vector3.new(9e9, 9e9, 9e9)
+    bv.Parent = fp
+    curGyro, curVel = bg, bv
+    pcall(function() h.PlatformStand = true end)
+
+    local ctrl, lastctrl = {f=0,b=0,l=0,r=0}, {f=0,b=0,l=0,r=0}
+    local curSpeed = 0
+
+    flyConn = RunService.RenderStepped:Connect(function()
+        if not nowe then return end
+        if not (c and c.Parent and h and h.Parent and h.Health > 0) then return end
+        if not (bg and bg.Parent and bv and bv.Parent) then return end
+
+        local md = h.MoveDirection
+        ctrl.f, ctrl.b, ctrl.l, ctrl.r = 0, 0, 0, 0
+        if md.Z >  0.5 then ctrl.f =  1 end
+        if md.Z < -0.5 then ctrl.b = -1 end
+        if md.X >  0.5 then ctrl.r =  1 end
+        if md.X < -0.5 then ctrl.l = -1 end
+
+        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+            curSpeed = curSpeed + 0.5 + (curSpeed / maxFlySpeed)
+            if curSpeed > maxFlySpeed then curSpeed = maxFlySpeed end
+        elseif curSpeed ~= 0 then
+            curSpeed = curSpeed - 1
+            if curSpeed < 0 then curSpeed = 0 end
+        end
+
+        local cam = workspace.CurrentCamera
+        if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+            bv.Velocity = ((cam.CFrame.LookVector * (ctrl.f + ctrl.b))
+                + ((cam.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - cam.CFrame.p)) * curSpeed
+            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+        elseif curSpeed ~= 0 then
+            bv.Velocity = ((cam.CFrame.LookVector * (lastctrl.f + lastctrl.b))
+                + ((cam.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - cam.CFrame.p)) * curSpeed
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
+        end
+        bg.CFrame = cam.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * curSpeed / maxFlySpeed), 0, 0)
+    end)
+end
+
+local function stopFly()
+    nowe = false
+    if flyConn then flyConn:Disconnect(); flyConn = nil end
+    stopTpWalk()
+    if curGyro then pcall(function() curGyro:Destroy() end); curGyro = nil end
+    if curVel  then pcall(function() curVel:Destroy()  end); curVel  = nil end
+    local c = LP.Character
+    local h = c and c:FindFirstChildWhichIsA("Humanoid")
+    if h then
+        pcall(function() h.PlatformStand = false end)
+        setStates(h, true)
+        pcall(function() h:ChangeState(Enum.HumanoidStateType.RunningNoPhysics) end)
+    end
+    resetAnim(c)
+end
+
+--============ NOCLIP ============
+local function applyNoclip(char)
+    if not char then return end
+    for _, p in ipairs(char:GetDescendants()) do
+        if p:IsA("BasePart") and p.CanCollide then
+            p.CanCollide = false
+            p:SetAttribute("NoclipSaved", true)
+        end
+    end
+end
+local function removeNoclip(char)
+    if not char then return end
+    for _, p in ipairs(char:GetDescendants()) do
+        if p:IsA("BasePart") and p:GetAttribute("NoclipSaved") then
+            p.CanCollide = true
+            p:SetAttribute("NoclipSaved", nil)
+        end
+    end
+end
+
+--============ ANTI AFK ============
+local function startAntiAfk()
+    addLoop(function()
+        while toggles.antiAfk do
+            task.wait(60)
+            local vu = LP:FindFirstChildOfClass("VirtualUser")
+            if not vu then
+                local v = Instance.new("VirtualUser")
+                v.Name = "VirtualUser"
+                v.Parent = LP
+            end
+        end
+    end)
+end
+
+--============ AUTO RUN ============
+local function startAutoRun()
+    addLoop(function()
+        while toggles.autoRun do
+            RunService.Heartbeat:Wait()
+            local c = LP.Character
+            local h = c and c:FindFirstChildWhichIsA("Humanoid")
+            if h and h.MoveDirection.Magnitude == 0 then
+                local cam = workspace.CurrentCamera
+                pcall(function() h:Move(cam.CFrame.LookVector, false) end)
+            end
+        end
+    end)
+end
+
+--============ FULL BRIGHT ============
+local function setFullBright(on)
+    if on then
+        savedLighting = {
+            Brightness = Lighting.Brightness, ClockTime = Lighting.ClockTime,
+            FogEnd = Lighting.FogEnd, Ambient = Lighting.Ambient,
+            OutdoorAmbient = Lighting.OutdoorAmbient, GlobalShadows = Lighting.GlobalShadows,
+        }
+        Lighting.Brightness, Lighting.ClockTime, Lighting.FogEnd = 3, 12, 1e6
+        Lighting.Ambient = Color3.fromRGB(200,200,200)
+        Lighting.OutdoorAmbient = Color3.fromRGB(200,200,200)
+        Lighting.GlobalShadows = false
+    else
+        if savedLighting.Brightness then
+            Lighting.Brightness = savedLighting.Brightness
+            Lighting.ClockTime = savedLighting.ClockTime
+            Lighting.FogEnd = savedLighting.FogEnd
+            Lighting.Ambient = savedLighting.Ambient
+            Lighting.OutdoorAmbient = savedLighting.OutdoorAmbient
+            Lighting.GlobalShadows = savedLighting.GlobalShadows
+        end
+    end
+end
+
+--============ ESP ============
+local function clearESP()
+    for _, g in ipairs(espObjects) do pcall(function() g:Destroy() end) end
+    espObjects = {}
+end
+local function addESPLabel(plr)
+    if plr == LP then return end
+    local c = plr.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local bb = Instance.new("BillboardGui")
+    bb.Name, bb.Adornee = "FLYESP", hrp
+    bb.Size, bb.StudsOffset, bb.AlwaysOnTop = UDim2.new(0, 200, 0, 50), Vector3.new(0, 3, 0), true
+    bb.Parent = PG
+    local lbl = Instance.new("TextLabel")
+    lbl.Size, lbl.BackgroundTransparency = UDim2.new(1, 0, 1, 0), 1
+    lbl.Font, lbl.Text = Enum.Font.SourceSansBold, plr.Name
+    lbl.TextColor3, lbl.TextSize, lbl.TextStrokeTransparency = rainbowHSV(), 18, 0
+    lbl.Parent = bb
+    table.insert(espObjects, bb)
+end
+local function refreshESP()
+    clearESP()
+    if not toggles.esp then return end
+    for _, p in ipairs(Players:GetPlayers()) do addESPLabel(p) end
+end
+
+--============ XRAY ============
+local function setXray(on)
+    if on then
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency < 1 and v:GetAttribute("FLY_XRAY") == nil then
+                v:SetAttribute("FLY_XRAY", v.Transparency)
+                v.Transparency = 0.5
+            end
+        end
+    else
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") and v:GetAttribute("FLY_XRAY") ~= nil then
+                v.Transparency = v:GetAttribute("FLY_XRAY")
+                v:SetAttribute("FLY_XRAY", nil)
+            end
+        end
+    end
+end
+
+--============ GOD MODE ============
+local function godEnable()
+    addLoop(function()
+        while toggles.god do
+            task.wait(0.5)
+            local c = LP.Character
+            local h = c and c:FindFirstChildWhichIsA("Humanoid")
+            if h then
+                h.MaxHealth = math.huge
+                if h.Health < h.MaxHealth then h.Health = h.MaxHealth end
+            end
+        end
+    end)
+end
+
+--============ HEAL ============
+local function healChar()
+    local c = LP.Character
+    local h = c and c:FindFirstChildWhichIsA("Humanoid")
+    if h then h.Health = h.MaxHealth end
+end
+
+--============ TP ============
+local function tpToMouse()
+    local m = LP:GetMouse()
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if m.Hit and hrp then hrp.CFrame = CFrame.new(m.Hit + Vector3.new(0, 3, 0)) end
+end
+local function tpToSpawn()
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    local sp = workspace:FindFirstChildOfClass("SpawnLocation")
+    if hrp and sp then hrp.CFrame = sp.CFrame + Vector3.new(0, 3, 0) end
+end
+
+--============ COPY POS ============
+local function copyPos()
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local p = hrp.Position
+        local s = string.format("%.2f, %.2f, %.2f", p.X, p.Y, p.Z)
+        if setclipboard then setclipboard(s) end
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title = "Copy Pos", Text = s, Duration = 3})
+        end)
+    end
+end
+
+--============ REJOIN ============
+local function rejoin()
+    pcall(function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, LP)
+    end)
+end
+
+--============ SERVER HOP ============
+local function serverHop()
+    local Http = game:GetService("HttpService")
+    local req = (syn and syn.request) or (http and http.request) or http_request or request
+    if not req then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Server Hop", Text="Executor không hỗ trợ HTTP", Duration=3})
+        end)
+        return
+    end
+    pcall(function()
+        local url = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+        local res = req({Url = url, Method = "GET"})
+        local data = Http:JSONDecode(res.Body)
+        if data and data.data then
+            for _, s in ipairs(data.data) do
+                if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                    return
+                end
+            end
+        end
+    end)
+end
+
+--============ HIPHEIGHT ============
+local hipState = 0
+local function cycleHipHeight()
+    local c = LP.Character
+    local h = c and c:FindFirstChildWhichIsA("Humanoid")
+    if not h then return end
+    local options = {0, 2, 5, 10, 20, 50}
+    hipState = (hipState % #options) + 1
+    h.HipHeight = options[hipState]
+    hipHeightBtn.Text = "HipHeight " .. options[hipState]
+end
+
+--============ GRAVITY ============
+local gravState = 1
+local function cycleGravity()
+    local options = {originalGravity, 50, 20, 5, 196.2}
+    gravState = (gravState % #options) + 1
+    workspace.Gravity = options[gravState]
+    gravityBtn.Text = "Gravity " .. math.floor(options[gravState])
+end
+
+--============ APPLY WSPD + JPWR ============
+local function applyWSJP()
+    local c = LP.Character
+    local h = c and c:FindFirstChildWhichIsA("Humanoid")
+    if not h then return end
+    local ws = tonumber(wsBox.Text)
+    local jp = tonumber(jpBox.Text)
+    if ws then h.WalkSpeed = ws end
+    if jp then h.JumpPower = jp; h.UseJumpPower = true end
+end
+
+--============ TOGGLE SYSTEM ============
+local function setToggle(name, on, btn)
+    toggles[name] = on
+    if btn then
+        btn.Text = (on and "✅ " or "⬜ ") .. btn.Text:gsub("^[✅⬜] ", "")
+    end
+end
+
+noclipBtn.MouseButton1Click:Connect(function()
+    setToggle("noclip", not toggles.noclip, noclipBtn)
+    if toggles.noclip then applyNoclip(LP.Character) else removeNoclip(LP.Character) end
+end)
+infJumpBtn.MouseButton1Click:Connect(function()
+    setToggle("infJump", not toggles.infJump, infJumpBtn)
+end)
+espBtn.MouseButton1Click:Connect(function()
+    setToggle("esp", not toggles.esp, espBtn); refreshESP()
+end)
+xrayBtn.MouseButton1Click:Connect(function()
+    setToggle("xray", not toggles.xray, xrayBtn); setXray(toggles.xray)
+end)
+antiAfkBtn.MouseButton1Click:Connect(function()
+    setToggle("antiAfk", not toggles.antiAfk, antiAfkBtn)
+    if toggles.antiAfk then startAntiAfk() end
+end)
+autoRunBtn.MouseButton1Click:Connect(function()
+    setToggle("autoRun", not toggles.autoRun, autoRunBtn)
+    if toggles.autoRun then startAutoRun() end
+end)
+fullBrightBtn.MouseButton1Click:Connect(function()
+    setToggle("fullBright", not toggles.fullBright, fullBrightBtn)
+    setFullBright(toggles.fullBright)
+end)
+hideGuiBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {Title="Hide GUI", Text="Nhấn H để hiện lại", Duration=3})
+    end)
+end)
+godBtn.MouseButton1Click:Connect(function()
+    setToggle("god", not toggles.god, god
